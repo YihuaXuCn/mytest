@@ -3,16 +3,19 @@ import os, sys
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--backward", '-b', type=int, help="choose BackwardSlice", required=True)
+parser.add_argument('-b', "--backward", type=int, help="choose BackwardSlice", required=True)
+parser.add_argument('-f', "--file", type=str, help="choose file", required=True)
+# parser.add_argument('-l', "--location", type=int, help="choose location", required=True)
 args = parser.parse_args()
 
 pyfile = sys.argv[0]
-cwd = os.path.dirname(pyfile)
+basedir = os.path.dirname(pyfile)
 
 normalization = True
 print("normalization is {}".format(normalization))
-fileNm = "priBetween"
-path = os.path.join(cwd, fileNm)
+# fileNm = "priBetween"
+fileNm = args.file
+path = os.path.join(basedir, fileNm)
 if normalization:
     fileNm += "_withNorm"
 else:
@@ -23,7 +26,6 @@ b = angr.Project(path, load_options={"auto_load_libs": False})
 # get fn Obj from fn name
 cfgDecom = b.analyses.CFGFast(data_references=True, normalize=True)
 
-fnNm = 'checkPrimeNumber'
 fnNm = 'main'
 # func = cfgBS.kb.functions.function(name=fnNm)
 func = cfgDecom.kb.functions.function(name=fnNm)
@@ -37,17 +39,18 @@ cfgBS = b.analyses.CFGEmulated(keep_state=True, \
                           context_sensitivity_level=0)
 cdg = b.analyses.CDG(cfgBS, start = func.addr)
 ddg = b.analyses.DDG(cfgBS, start = func.addr)
-tarAddr = int(0x40121c) # int(0x401226) # int(0x401189) # prim
-# tarAddr = target_func.addr # test
-# tarAddr = int(0x40116b) # int(0x401175) # testB
-target_node = cfgBS.model.get_any_node(tarAddr)
-index = 9 # 10 # 5 # pri
-# index =  75 # test
-# index =  29 # 9 # testB
-bs = b.analyses.BackwardSlice(cfgBS, cdg=cdg, ddg=ddg, targets=[ (target_node, index) ])
-print({hex(x[0]):x[1] for x in bs.chosen_statements.items()})
-# target_node.block.vex.pp()
-# print(bs.dbg_repr(None))
+if args.backward:
+    tarAddr = int(0x40121c) # int(0x401226) # int(0x401189) # prim
+    # tarAddr = target_func.addr # test
+    # tarAddr = int(0x40116b) # int(0x401175) # testB
+    target_node = cfgBS.model.get_any_node(tarAddr)
+    index = 9 # 10 # 5 # pri
+    # index =  75 # test
+    # index =  29 # 9 # testB
+    bs = b.analyses.BackwardSlice(cfgBS, cdg=cdg, ddg=ddg, targets=[ (target_node, index) ])
+    print({hex(x[0]):x[1] for x in bs.chosen_statements.items()})
+    target_node.block.vex.pp()
+    # print(bs.dbg_repr(None))
 
 # to check two node sets from CFGFast and CFGEmulated
 # nodes from CFGEmulated should be a subset of nodes from CFGFast
@@ -66,7 +69,7 @@ if len(nodesBS) > 0 and len(nodesDecom) > 0:
 else:
     print("nodesBS or nodesDecom wrong")
 
-# cfgDecom = b.analyses.CFGFast(data_references=True, normalize=True)
+cfgDecom = b.analyses.CFGFast(data_references=True, normalize=True)
 
 if not args.backward:
     # dec = b.analyses.Decompiler(func, cfg=cfgDecom.model)
@@ -88,7 +91,7 @@ import pygraphviz as gv
 import matplotlib.pyplot as plt
 import subprocess
 
-pngdir = os.path.join(cwd, 'png')
+pngdir = os.path.join(basedir, 'png')
 print(pngdir)
 if not os.path.exists(pngdir):
   subprocess.run(['mkdir', '-p', pngdir])

@@ -54,6 +54,27 @@ def decompiler(file):
 
     # print(type(d))
     code = dec.codegen.text
+    return cfgBS, cdg, ddg
+
+def draw3Graphs(cfgBS, cdg, ddg, cwd, fileNm):
+    import angr
+    from angrutils import *
+    import networkx as nx
+    import pygraphviz as gv
+    import matplotlib.pyplot as plt
+    import subprocess
+
+    pngdir = os.path.join(cwd, 'png')
+    print(pngdir)
+    if not os.path.exists(pngdir):
+      subprocess.run(['mkdir', '-p', pngdir])
+    fileNm = os.path.basename(fileNm)
+    fileNm = os.path.join(pngdir, fileNm)
+
+    plot_cfg(cfgBS, fileNm+"_cfg", asminst=True, remove_imports=True, remove_path_terminator=True, format="raw") 
+    plot_cdg(cfgBS, cdg, fileNm+"_cdg") 
+    plot_dfg(ddg.graph, fileNm+"_ddg") 
+    process = subprocess.run(['dot', '-Tpng', '-o', fileNm+"_cfg.png", fileNm+"_cfg.raw"])
 
 pyfile = sys.argv[0]
 cwd = os.path.dirname(pyfile)
@@ -66,3 +87,6 @@ for file in files:
     #     fileNm += "_withNorm"
     # else:
     #     fileNm += "_withoutNorm"
+    cfgBS, cdg, ddg = decompiler(file)
+    draw3Graphs(cfgBS, cdg, ddg, cwd, file)
+
